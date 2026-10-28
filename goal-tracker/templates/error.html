@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} – Goal Tracker{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>{{ title }}</h1>
+  <p>{{ message }}</p>
+  <p><a class="btn" href="{{ url_for('dashboard') }}">Go to the dashboard</a></p>
+</section>
+{% endblock %}

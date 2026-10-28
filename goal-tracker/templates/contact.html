@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, textarea, error_summary %}
+{% block title %}Send feedback – Goal Tracker{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Send feedback</h1>
+  {% if sent %}
+  <div class="flash" role="status"><p>Thanks. Your message has been saved.</p></div>
+  {% endif %}
+  <p class="lede">Tell us what works and what doesn't.</p>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('contact') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ field('name', 'Name', form, errors, extra='autocomplete="name"') }}
+    {{ field('email', 'Email', form, errors, type='email', extra='autocomplete="email"') }}
+    {{ textarea('message', 'Message', form, errors, hint='Up to 200 words.', rows=5) }}
+    <button class="btn" type="submit">Send message</button>
+  </form>
+</section>
+{% endblock %}

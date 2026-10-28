@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, error_summary %}
+{% block title %}Create account – Goal Tracker{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Create your account</h1>
+  <p class="lede">Set goals, break them into weeks and see where you stand.</p>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('register') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ field('name', 'Name', form, errors, extra='autocomplete="name"') }}
+    {{ field('email', 'Email', form, errors, type='email', extra='autocomplete="email"') }}
+    {{ field('password', 'Password', form, errors, type='password', keep=false, hint='At least 10 characters.', extra='autocomplete="new-password"') }}
+    <button class="btn" type="submit">Create account</button>
+  </form>
+  <p class="aside">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+</section>
+{% endblock %}

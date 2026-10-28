@@ -1,0 +1,136 @@
+{# ---------- forms ---------- #}
+{% macro error_summary(errors) %}
+{% if errors %}
+<div class="error-summary" role="alert" id="error-summary" tabindex="-1">
+  <h2>{{ 'There is a problem' if errors|length == 1 else 'There are %d problems'|format(errors|length) }}</h2>
+  <ul>
+    {% for key, msg in errors.items() %}
+    <li>{% if key == 'form' %}{{ msg }}{% else %}<a href="#{{ key }}">{{ msg }}</a>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro field(name, label, form, errors, type='text', hint='', extra='', keep=true, default='') %}
+{% set err = errors.get(name) %}
+{% set described = ((name ~ '-hint ') if hint else '') ~ ((name ~ '-error') if err else '') %}
+<div class="field{{ ' has-error' if err }}">
+  <label for="{{ name }}">{{ label }}</label>
+  {% if hint %}<p class="hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if err %}<p class="error" id="{{ name }}-error"><span class="visually-hidden">Error: </span>{{ err }}</p>{% endif %}
+  <input id="{{ name }}" name="{{ name }}" type="{{ type }}"{% if keep %} value="{{ form.get(name, default) }}"{% endif %}{% if err %} aria-invalid="true"{% endif %}{% if described.strip() %} aria-describedby="{{ described.strip() }}"{% endif %} {{ extra|safe }}>
+</div>
+{% endmacro %}
+
+{% macro textarea(name, label, form, errors, hint='', rows=4) %}
+{% set err = errors.get(name) %}
+{% set described = ((name ~ '-hint ') if hint else '') ~ ((name ~ '-error') if err else '') %}
+<div class="field{{ ' has-error' if err }}">
+  <label for="{{ name }}">{{ label }}</label>
+  {% if hint %}<p class="hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if err %}<p class="error" id="{{ name }}-error"><span class="visually-hidden">Error: </span>{{ err }}</p>{% endif %}
+  <textarea id="{{ name }}" name="{{ name }}" rows="{{ rows }}"{% if err %} aria-invalid="true"{% endif %}{% if described.strip() %} aria-describedby="{{ described.strip() }}"{% endif %}>{{ form.get(name, '') }}</textarea>
+</div>
+{% endmacro %}
+
+{% macro select(name, label, options, form, errors, default='', hint='') %}
+{% set err = errors.get(name) %}
+{% set described = ((name ~ '-hint ') if hint else '') ~ ((name ~ '-error') if err else '') %}
+<div class="field{{ ' has-error' if err }}">
+  <label for="{{ name }}">{{ label }}</label>
+  {% if hint %}<p class="hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if err %}<p class="error" id="{{ name }}-error"><span class="visually-hidden">Error: </span>{{ err }}</p>{% endif %}
+  <select id="{{ name }}" name="{{ name }}"{% if err %} aria-invalid="true"{% endif %}{% if described.strip() %} aria-describedby="{{ described.strip() }}"{% endif %}>
+    {% for value, text in options %}
+    <option value="{{ value }}"{% if form.get(name, default) == value %} selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endmacro %}
+
+{% macro share_choice(form, errors, default='private') %}
+{% set err = errors.get('share_level') %}
+<fieldset class="choices{{ ' has-error' if err }}" id="share_level"{% if err %} aria-describedby="share_level-error"{% endif %}>
+  <legend>Who can see this goal?</legend>
+  {% if err %}<p class="error" id="share_level-error"><span class="visually-hidden">Error: </span>{{ err }}</p>{% endif %}
+  {% for value, title, text in [
+      ('private', 'Private', 'Only you.'),
+      ('summary', 'Summary', 'Friends see your primary metric, status and streak.'),
+      ('full', 'Full detail', 'Friends also see every metric, weekly targets, entries and graphs.')] %}
+  <label class="choice"><input type="radio" name="share_level" value="{{ value }}"{% if form.get('share_level', default) == value %} checked{% endif %}>
+    <span><strong>{{ title }}</strong> {{ text }}</span></label>
+  {% endfor %}
+</fieldset>
+{% endmacro %}
+
+{# ---------- progress display ---------- #}
+{% macro chip(status) %}<span class="chip chip-{{ status }}">{{ status|status_label }}</span>{% endmacro %}
+
+{% macro ring(pct, label) %}
+<svg class="ring" viewBox="0 0 100 100" role="img" aria-label="{{ label }}: {{ pct }} percent complete">
+  <circle class="ring-track" cx="50" cy="50" r="40" fill="none" stroke-width="10"/>
+  <circle class="ring-fill" cx="50" cy="50" r="40" fill="none" stroke-width="10" stroke-linecap="round"
+          stroke-dasharray="{{ (pct * 2.51327)|round(1) }} 251.327" transform="rotate(-90 50 50)"/>
+  <text x="50" y="56" text-anchor="middle" class="ring-text">{{ pct }}%</text>
+</svg>
+{% endmacro %}
+
+{% macro week_strip(weeks) %}
+<ol class="strip" aria-label="Week by week status">
+  {% for w in weeks %}
+  <li class="cell cell-{{ w.status }}" title="Week {{ w.n }}: {{ w.status|status_label }}"><span class="visually-hidden">Week {{ w.n }}: {{ w.status|status_label }}</span><span aria-hidden="true">{{ w.n }}</span></li>
+  {% endfor %}
+</ol>
+{% endmacro %}
+
+{% macro chart(r) %}
+{% set c = r.chart %}
+{% set m = r.metric %}
+<figure class="chart">
+  <svg viewBox="0 0 600 240" role="img" aria-labelledby="chart-t-{{ m.id }}">
+    <title id="chart-t-{{ m.id }}">{{ m.name }} in {{ m.unit }}: target compared with actual, over {{ c.weeks }} weeks</title>
+    <line class="axis" x1="{{ c.left }}" y1="{{ c.bottom }}" x2="{{ c.right }}" y2="{{ c.bottom }}"/>
+    <line class="grid" x1="{{ c.left }}" y1="{{ c.top }}" x2="{{ c.right }}" y2="{{ c.top }}"/>
+    <text class="tick" x="{{ c.left - 6 }}" y="{{ c.top + 4 }}" text-anchor="end">{{ c.hi|num }}</text>
+    <text class="tick" x="{{ c.left - 6 }}" y="{{ c.bottom }}" text-anchor="end">{{ c.lo|num }}</text>
+    <text class="tick" x="{{ c.left }}" y="{{ c.bottom + 20 }}">Start</text>
+    <text class="tick" x="{{ c.right }}" y="{{ c.bottom + 20 }}" text-anchor="end">Week {{ c.weeks }}</text>
+    {% if c.shade %}<polygon class="shade" points="{{ c.shade }}"/>{% endif %}
+    {% if c.original %}<polyline class="line-original" points="{{ c.original }}" fill="none"/>{% endif %}
+    <polyline class="line-target" points="{{ c.target }}" fill="none"/>
+    {% if c.has_actual %}<polyline class="line-actual" points="{{ c.actual }}" fill="none"/>{% endif %}
+    <circle class="dot-actual" cx="{{ c.last_x }}" cy="{{ c.last_y }}" r="4"/>
+  </svg>
+  <figcaption class="legend">
+    <span class="key key-target">Target</span>
+    <span class="key key-actual">Actual</span>
+    {% if c.original %}<span class="key key-original">Original plan</span>{% endif %}
+    <span class="key key-shade">Gap between them</span>
+  </figcaption>
+</figure>
+{% endmacro %}
+
+{% macro week_table(r) %}
+{% set m = r.metric %}
+<div class="table-wrap">
+<table>
+  <caption class="visually-hidden">{{ m.name }} by week, in {{ m.unit }}</caption>
+  <thead><tr><th scope="col">Week</th><th scope="col">Dates</th><th scope="col">Target</th><th scope="col">Actual</th><th scope="col">Variance</th><th scope="col">Running variance</th><th scope="col">Status</th></tr></thead>
+  <tbody>
+  {% for w in r.weeks %}
+  <tr>
+    <th scope="row">{{ w.n }}</th>
+    <td>{{ w.start|fmtdate }}</td>
+    <td class="num">{{ w.target|num }}</td>
+    <td class="num">{{ w.actual|num if w.actual is not none else '-' }}</td>
+    <td class="num">{{ w.variance|signed }}</td>
+    <td class="num">{{ w.cum_variance|signed }}</td>
+    <td>{{ chip(w.status) }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Variance is actual minus target. A positive number is ahead of plan, even for goals where the number should go down.</p>
+{% endmacro %}

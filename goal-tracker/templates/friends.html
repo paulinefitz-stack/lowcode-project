@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, error_summary %}
+{% block title %}Friends – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page wide">
+  <h1>Friends</h1>
+  <p class="lede">Connections are mutual: you both need to accept. Friends only see goals you choose to share.</p>
+
+  <h2>Invite a friend</h2>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('friends_invite') }}" novalidate class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ field('email', 'Their email address', form, errors, type='email', hint='They need a Goal Tracker account first.', extra='autocomplete="off"') }}
+    <button class="btn" type="submit">Send invitation</button>
+  </form>
+
+  {% if incoming %}
+  <h2>Invitations for you</h2>
+  <ul class="rows">
+    {% for r in incoming %}
+    <li>
+      <span><strong>{{ r.other_name }}</strong> <span class="muted">{{ r.other_email }}</span></span>
+      <form method="post" action="{{ url_for('friends_respond', fid=r.id) }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn" type="submit" name="action" value="accept">Accept</button>
+        <button class="btn btn-quiet" type="submit" name="action" value="decline">Decline</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if outgoing %}
+  <h2>Waiting for a reply</h2>
+  <ul class="rows">
+    {% for r in outgoing %}
+    <li>
+      <span><strong>{{ r.other_name }}</strong> <span class="muted">{{ r.other_email }}</span></span>
+      <form method="post" action="{{ url_for('friends_revoke', fid=r.id) }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-quiet" type="submit">Cancel invitation</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <h2>Your friends</h2>
+  {% if friends %}
+  <ul class="rows">
+    {% for f in friends %}
+    <li class="stack">
+      <div class="row-top">
+        <span><strong>{{ f.row.other_name }}</strong> <span class="muted">{{ f.row.other_email }}</span></span>
+        <form method="post" action="{{ url_for('friends_revoke', fid=f.row.id) }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-quiet" type="submit">Remove</button>
+        </form>
+      </div>
+      {% if f.goals %}
+      <ul class="plain">
+        {% for goal in f.goals %}
+        <li><a href="{{ url_for('friend_goal', goal_id=goal.id) }}">{{ goal.title }}</a> <span class="muted">({{ 'summary' if goal.share_level == 'summary' else 'full detail' }})</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">Nothing shared with you yet.</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No friends yet. Send an invitation above, then share a goal from its page.</p>
+  {% endif %}
+</section>
+{% endblock %}

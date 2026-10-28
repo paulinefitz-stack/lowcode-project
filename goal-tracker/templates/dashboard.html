@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "macros.html" import chip, ring, week_strip %}
+{% block title %}Dashboard – Goal Tracker{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Your goals</h1>
+    {% if rows %}
+    <p class="tally">{{ counts.ahead }} ahead, {{ counts.on_track }} on track, {{ counts.behind }} behind, {{ counts.off_track }} off track{% if counts.upcoming %}, {{ counts.upcoming }} not started{% endif %}.
+      Each goal is judged on its primary metric.</p>
+    {% endif %}
+  </div>
+  <a class="btn" href="{{ url_for('goal_new') }}">New goal</a>
+</div>
+
+{% if not rows %}
+<section class="empty">
+  <h2>No goals yet</h2>
+  <p>Pick something you want to finish by a date, such as a marathon, a weight target or a syllabus. Goal Tracker will break it into weekly targets.</p>
+  <a class="btn" href="{{ url_for('goal_new') }}">Set your first goal</a>
+</section>
+{% else %}
+<ul class="goal-list">
+  {% for row in rows %}
+  {% set goal = row.goal %}{% set r = row.report %}{% set m = r.metric %}
+  <li class="goal">
+    <div class="goal-top">
+      {{ ring(r.progress, goal.title) }}
+      <div class="goal-main">
+        <h2><a href="{{ url_for('goal_detail', goal_id=goal.id) }}">{{ goal.title }}</a></h2>
+        <p class="goal-line">{{ chip(r.status) }} <span>{{ r.delta_text }}</span></p>
+        <p class="goal-line muted">{{ m.name }}: {{ r.actual|num }} of {{ r.final|num }} {{ m.unit }}, by {{ goal.end_date|fmtdate }}</p>
+      </div>
+    </div>
+    <dl class="facts">
+      <div><dt>Streak</dt><dd>{{ r.streak }} {{ 'week' if r.streak == 1 else 'weeks' }}</dd></div>
+      <div>
+        <dt>Next weekly target</dt>
+        <dd>{% if r.next_week %}{{ r.next_week.target|num }} {{ m.unit }}{% else %}Plan finished{% endif %}</dd>
+      </div>
+    </dl>
+    {{ week_strip(r.weeks) }}
+    <p class="goal-actions"><a href="{{ url_for('goal_log', goal_id=goal.id) }}">Log progress</a></p>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

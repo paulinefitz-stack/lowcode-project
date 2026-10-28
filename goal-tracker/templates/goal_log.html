@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, error_summary %}
+{% block title %}Log progress – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page">
+  <p class="crumb"><a href="{{ url_for('goal_detail', goal_id=goal.id) }}">{{ goal.title }}</a></p>
+  <h1>Log progress</h1>
+  <p class="lede">Enter what you did on one day. Logging the same day again replaces the earlier numbers. Leave a metric empty to skip it.</p>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('goal_log', goal_id=goal.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ field('entry_date', 'Date', form, errors, type='date', extra='min="' ~ goal.start_date ~ '" max="' ~ [today, goal.end_date]|min ~ '"') }}
+    {% for m in metrics %}
+    {{ field('value_%d'|format(m.id), m.name ~ ' (' ~ m.unit ~ ')', form, errors, type='number', hint=('Your total for that day.' if m.aggregation == 'sum' else 'Your reading for that day.'), extra='step="any" min="0" inputmode="decimal"') }}
+    {% endfor %}
+    {{ field('note', 'Note (optional)', form, errors, extra='maxlength="200"') }}
+    <button class="btn" type="submit">Save progress</button>
+    <a class="btn btn-quiet" href="{{ url_for('goal_detail', goal_id=goal.id) }}">Cancel</a>
+  </form>
+
+  <h2 class="spaced">Recent entries</h2>
+  {% if recent %}
+  <div class="table-wrap">
+  <table>
+    <caption class="visually-hidden">Most recent entries</caption>
+    <thead><tr><th scope="col">Date</th><th scope="col">Metric</th><th scope="col">Value</th><th scope="col">Note</th></tr></thead>
+    <tbody>
+      {% for e in recent %}
+      <tr><td>{{ e.entry_date|fmtdate }}</td><td>{{ e.name }}</td><td class="num">{{ e.value|num }} {{ e.unit }}</td><td>{{ e.note }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="muted">Nothing logged yet. Your first entry will appear here and on the graph.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}History – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page wide">
+  <p class="crumb"><a href="{{ url_for('goal_detail', goal_id=goal.id) }}">{{ goal.title }}</a></p>
+  <h1>Plan history</h1>
+  <p class="lede">Every change to a plan is kept. Version 1 is your original plan and is never overwritten.</p>
+  {% for b in blocks %}
+  {% set m = b.metric %}
+  <section class="metric" aria-labelledby="hist-{{ m.id }}">
+    <h2 id="hist-{{ m.id }}">{{ m.name }} ({{ m.unit }}){% if m.is_primary %} <span class="badge">Primary</span>{% endif %}</h2>
+    <ol class="timeline">
+      {% for item in b.versions %}
+      {% set v = item.v %}
+      <li>
+        <p><strong>Version {{ v.version_no }}</strong>{% if loop.last %} <span class="badge">Current</span>{% endif %}
+          <span class="muted">{{ v.created_at[:10]|fmtdate }}</span></p>
+        <p>Final target {{ v.final_target|num }} {{ m.unit }}, ending {{ v.end_date|fmtdate }}.</p>
+        <p class="muted">Reason: {{ v.reason }}</p>
+        <details>
+          <summary>Weekly targets in this version</summary>
+          <ul class="plain">
+            {% for w in item.weeks %}<li>Week {{ loop.index }}, from {{ w.week_start|fmtdate }}: {{ w.target_value|num }}</li>{% endfor %}
+          </ul>
+        </details>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endfor %}
+</section>
+{% endblock %}

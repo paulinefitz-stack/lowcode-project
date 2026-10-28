@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, error_summary %}
+{% block title %}Edit plan – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page wide">
+  <p class="crumb"><a href="{{ url_for('goal_detail', goal_id=goal.id) }}">{{ goal.title }}</a></p>
+  <h1>Edit the weekly plan</h1>
+  <p class="lede">Every week needs a target and a short description of the weekly goal. Change them here, or let Goal Tracker re-spread the weeks that haven't finished. Saving keeps the previous version in the history.</p>
+  {{ error_summary(errors) }}
+
+  <form method="post" action="{{ url_for('goal_plan', goal_id=goal.id) }}" novalidate class="respread">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p><strong>Re-spread the remaining weeks</strong></p>
+    <button class="btn btn-quiet" type="submit" name="action" value="even">Evenly</button>
+    <button class="btn btn-quiet" type="submit" name="action" value="ramp">Building up</button>
+    <p class="hint">Running totals only. Readings like weight stay on a straight line to the target.</p>
+  </form>
+
+  <form method="post" action="{{ url_for('goal_plan', goal_id=goal.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="save">
+    {% for b in blocks %}
+    {% set m = b.metric %}
+    <fieldset>
+      <legend>{{ m.name }} ({{ m.unit }}){% if m.is_primary %} <span class="badge">Primary</span>{% endif %}</legend>
+      <p class="hint">{{ 'Targets add up to the final target.' if m.aggregation == 'sum' else 'Each target is where your reading should be by that week. The last one is the final target.' }}</p>
+      <div class="table-wrap">
+      <table class="edit">
+        <caption class="visually-hidden">{{ m.name }} weekly targets</caption>
+        <thead><tr><th scope="col">Week</th><th scope="col">Starts</th><th scope="col">Target</th><th scope="col">Weekly goal</th></tr></thead>
+        <tbody>
+        {% for w in b.weeks %}
+        <tr{% if w.past %} class="past"{% endif %}>
+          <th scope="row">{{ w.n }}</th>
+          <td>{{ w.start|fmtdate }}</td>
+          <td>
+            <label class="visually-hidden" for="{{ w.tname }}">{{ m.name }} target, week {{ w.n }}</label>
+            <input id="{{ w.tname }}" name="{{ w.tname }}" type="number" step="any" min="0" inputmode="decimal" value="{{ form.get(w.tname, w.target) }}"{% if errors.get(w.tname) %} aria-invalid="true"{% endif %}>
+          </td>
+          <td>
+            <label class="visually-hidden" for="{{ w.dname }}">{{ m.name }} goal description, week {{ w.n }}</label>
+            <input id="{{ w.dname }}" name="{{ w.dname }}" type="text" value="{{ form.get(w.dname, w.desc) }}"{% if errors.get(w.dname) %} aria-invalid="true"{% endif %}>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </fieldset>
+    {% endfor %}
+    {{ field('reason', 'Reason for the change (optional)', form, errors, extra='maxlength="200"') }}
+    <button class="btn" type="submit">Save plan</button>
+    <a class="btn btn-quiet" href="{{ url_for('goal_detail', goal_id=goal.id) }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

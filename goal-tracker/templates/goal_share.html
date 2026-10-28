@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "macros.html" import share_choice, error_summary %}
+{% block title %}Share goal – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page">
+  <p class="crumb"><a href="{{ url_for('goal_detail', goal_id=goal.id) }}">{{ goal.title }}</a></p>
+  <h1>Share this goal</h1>
+  <p class="lede">Only friends who have accepted your invitation can see a shared goal. Changes apply straight away.</p>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('goal_share', goal_id=goal.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ share_choice(form, errors, goal.share_level) }}
+    <button class="btn" type="submit">Save sharing</button>
+    <a class="btn btn-quiet" href="{{ url_for('goal_detail', goal_id=goal.id) }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

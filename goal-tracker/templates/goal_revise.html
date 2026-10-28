@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, textarea, error_summary %}
+{% block title %}Revise goal – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page">
+  <p class="crumb"><a href="{{ url_for('goal_detail', goal_id=goal.id) }}">{{ goal.title }}</a></p>
+  <h1>Revise this goal</h1>
+  <p class="lede">Move the end date or change a final target. Weeks that have already finished keep their targets, the rest are re-planned, and your original plan stays in the history.</p>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('goal_revise', goal_id=goal.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ field('end_date', 'New end date', form, errors, type='date') }}
+    {% for m in metrics %}
+    {{ field('final_%d'|format(m.id), 'Final target for ' ~ m.name ~ ' (' ~ m.unit ~ ')', form, errors, type='number', extra='step="any" min="0" inputmode="decimal"') }}
+    {% endfor %}
+    {{ textarea('reason', 'Why are you changing it?', form, errors, hint='Required. Up to 200 characters.', rows=3) }}
+    <button class="btn" type="submit">Save revision</button>
+    <a class="btn btn-quiet" href="{{ url_for('goal_detail', goal_id=goal.id) }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

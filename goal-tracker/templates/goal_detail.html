@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "macros.html" import chip, ring, week_strip, chart, week_table, textarea, error_summary %}
+{% block title %}{{ goal.title }} – Goal Tracker{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ goal.title }}</h1>
+    {% if not owner %}<p class="by">Shared by {{ owner_name }}. You can see {{ 'a summary' if level == 'summary' else 'full detail' }}.</p>{% endif %}
+    <p class="lede">{{ goal.description }}</p>
+    <p class="meta">{{ goal.start_date|fmtdate }} to {{ goal.end_date|fmtdate }}.
+      On-track threshold: {{ goal.acceptance_pct|num }}%.
+      {% if owner %}Sharing: {{ goal.share_level }}.{% endif %}</p>
+  </div>
+  {% if owner %}
+  <div class="actions">
+    <a class="btn" href="{{ url_for('goal_log', goal_id=goal.id) }}">Log progress</a>
+    <a class="btn btn-quiet" href="{{ url_for('goal_plan', goal_id=goal.id) }}">Edit plan</a>
+    <a class="btn btn-quiet" href="{{ url_for('goal_revise', goal_id=goal.id) }}">Revise goal</a>
+    <a class="btn btn-quiet" href="{{ url_for('goal_history', goal_id=goal.id) }}">History</a>
+    <a class="btn btn-quiet" href="{{ url_for('goal_share', goal_id=goal.id) }}">Share</a>
+  </div>
+  {% endif %}
+</div>
+
+{% for r in reports %}
+{% set m = r.metric %}
+<section class="metric" aria-labelledby="metric-{{ m.id }}">
+  <div class="metric-head">
+    {{ ring(r.progress, m.name) }}
+    <div>
+      <h2 id="metric-{{ m.id }}">{{ m.name }}{% if m.is_primary %} <span class="badge">Primary</span>{% endif %}</h2>
+      <p class="goal-line">{{ chip(r.status) }} <span>{{ r.delta_text }}</span></p>
+      <p class="goal-line muted">{{ r.actual|num }} of {{ r.final|num }} {{ m.unit }} so far. The plan says {{ r.expected|num }} by now.</p>
+    </div>
+  </div>
+  <dl class="facts">
+    <div><dt>Streak</dt><dd>{{ r.streak }} {{ 'week' if r.streak == 1 else 'weeks' }}</dd></div>
+    <div><dt>Next weekly target</dt><dd>{% if r.next_week %}{{ r.next_week.target|num }} {{ m.unit }}{% else %}Plan finished{% endif %}</dd></div>
+    <div><dt>Plan version</dt><dd>{{ r.version }}{% if r.version > 1 %} (revised){% endif %}</dd></div>
+  </dl>
+  {% if level == 'full' %}
+  {{ chart(r) }}
+  {{ week_strip(r.weeks) }}
+  <details{% if loop.first %} open{% endif %}>
+    <summary>Week by week</summary>
+    {{ week_table(r) }}
+  </details>
+  {% endif %}
+</section>
+{% endfor %}
+
+<section class="comments" aria-labelledby="comments-h">
+  <h2 id="comments-h">Comments</h2>
+  {% if comments %}
+  <ul class="comment-list">
+    {% for c in comments %}
+    <li><p class="who">{{ c.name }} <span class="muted">{{ c.created_at[:10]|fmtdate }}</span></p><p>{{ c.body }}</p></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No comments yet.</p>
+  {% endif %}
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('goal_detail', goal_id=goal.id) if owner else url_for('friend_goal', goal_id=goal.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {{ textarea('body', 'Add a comment', form, errors, hint='Up to 500 characters.', rows=3) }}
+    <button class="btn" type="submit">Post comment</button>
+  </form>
+</section>
+{% endblock %}

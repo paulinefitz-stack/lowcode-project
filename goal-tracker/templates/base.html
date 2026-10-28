@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Goal Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="bar">
+      <a class="brand" href="{{ url_for('dashboard') }}">Goal Tracker</a>
+      <nav aria-label="Main">
+        {% if current_user %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('goal_new') }}">New goal</a>
+        <a href="{{ url_for('friends') }}">Friends</a>
+        <form method="post" action="{{ url_for('logout') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="link" type="submit">Log out ({{ current_user.name }})</button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('login') }}">Log in</a>
+        <a href="{{ url_for('register') }}">Create account</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="flash" role="status">{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>
+    {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="foot">
+    <a href="{{ url_for('contact') }}">Send feedback</a>
+  </footer>
+</body>
+</html>

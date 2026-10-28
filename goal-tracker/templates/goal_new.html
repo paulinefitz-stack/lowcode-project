@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "macros.html" import field, textarea, select, share_choice, error_summary %}
+{% block title %}New goal – Goal Tracker{% endblock %}
+{% block content %}
+<section class="form-page">
+  <h1>Set a new goal</h1>
+  <p class="lede">Say what you want to achieve and by when. You can track up to {{ rows|length }} measures for one goal, such as total distance and longest run.</p>
+  {{ error_summary(errors) }}
+  <form method="post" action="{{ url_for('goal_new') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <fieldset>
+      <legend>The goal</legend>
+      {{ field('title', 'Goal', form, errors, hint='For example: Run a marathon.', extra='maxlength="100"') }}
+      {{ textarea('description', 'What does success look like?', form, errors, hint='Up to 50 words.', rows=3) }}
+      <div class="row">
+        {{ field('start_date', 'Start date', form, errors, type='date', default=today, extra='min="' ~ today ~ '"') }}
+        {{ field('end_date', 'End date', form, errors, type='date', hint='At least one week after the start.') }}
+      </div>
+      {{ field('acceptance_pct', 'On-track threshold (%)', form, errors, type='number', default='0', hint='How far short of a weekly target still counts as on track, as a percent of that target. 0 means you must hit the target exactly.', extra='min="0" max="50" step="any" inputmode="decimal"') }}
+      {{ select('plan_style', 'Spread running totals', [('even', 'Evenly, the same amount every week'), ('ramp', 'Building up, more in later weeks')], form, errors, default='even', hint='Applies to metrics you add up, like miles. Readings like weight always move in a straight line.') }}
+    </fieldset>
+
+    <fieldset id="metrics" tabindex="-1">
+      <legend>What you will measure</legend>
+      <p class="hint">Fill in at least the first. Leave unused rows empty. Mark one metric as primary; it decides the goal's overall status.</p>
+      {% for i in rows %}
+      <div class="metric-block">
+        <h2>Metric {{ i + 1 }}</h2>
+        <div class="row">
+          {{ field('m%d_name'|format(i), 'Name', form, errors, hint='For example: Distance.' if i == 0 else '') }}
+          {{ field('m%d_unit'|format(i), 'Unit', form, errors, hint='For example: miles.' if i == 0 else '') }}
+        </div>
+        <div class="row">
+          {{ select('m%d_aggregation'|format(i), 'How entries combine', [('sum', 'Add up daily entries (miles, lessons)'), ('latest', 'Latest reading (weight, score)')], form, errors, default='sum') }}
+          {{ select('m%d_direction'|format(i), 'Direction', [('increase', 'Should go up'), ('decrease', 'Should go down')], form, errors, default='increase') }}
+        </div>
+        <div class="row">
+          {{ field('m%d_start'|format(i), 'Starting value', form, errors, type='number', hint='Only for latest readings, like your weight today.', extra='step="any" min="0" inputmode="decimal"') }}
+          {{ field('m%d_final'|format(i), 'Final target', form, errors, type='number', hint='The total, or the reading you want to reach.', extra='step="any" min="0" inputmode="decimal"') }}
+        </div>
+        <label class="choice"><input type="radio" name="primary" value="{{ i }}"{% if loop.first %} id="primary"{% endif %}{% if form.get('primary', '0') == i|string %} checked{% endif %}> <span>Make this the primary metric</span></label>
+      </div>
+      {% endfor %}
+    </fieldset>
+
+    {{ share_choice(form, errors) }}
+
+    <button class="btn" type="submit">Create goal and plan</button>
+    <a class="btn btn-quiet" href="{{ url_for('dashboard') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}
